@@ -3,22 +3,18 @@ import zipfile
 from PyQt5 import QtGui,QtCore,QtWidgets
 from PyQt5.QtCore import Qt
 from threading import Lock
-import os,sys,re
+import os
+import sys
+import re
 from PyQt5.Qsci import *
 import re
 import keyword
 from PyQt5.QtGui import *
 import subprocess
-import select
 
 from CodeEditUi import Ui_MainWindow as CodeEditUi
 
 __all__ = ["Worker","Zip","MakeCode"]
-
-
-def set_nonblocking(fd):
-    flags = fcntl.fcntl(fd, fcntl.F_GETFL)
-    fcntl.fcntl(fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
 
 class Worker(QtCore.QThread):
     sinOut = QtCore.pyqtSignal(object)
@@ -40,7 +36,7 @@ class Worker(QtCore.QThread):
         self.sinOut.connect(self.work.showInfo)
     def run(self):
         self.work.run()
-        print(f"Worker {self.workName} Finished.")
+        print(" ".join(["Worker",self.workName,"Finished."]))
         if self.workName == "Zip-Dir":
             self.ui.sinMakeCode.emit()
 
@@ -70,14 +66,23 @@ class Zip:
         self.file_paths = []
     
         # 获取指定目录下的所有文件及其子目录的路径
+        self.zipAllSize = []
+        sizedPool = ThreadPoolExecutor(8)
+        def getSize(p):
+            self.zipAllSize.append(os.path.getsize(file_path))
         for root, _, files in os.walk(self.dir):
             for file in files:
                 file_path = os.path.join(root,file)
                 self.file_paths.append(file_path)
                 self.returnInfo("打包程序压缩包 - 搜索文件",0)
+                sizedPool.submit(getSize,file_path)
+        sizedPool.shutdown()
+        self.ui.zipAllSize = sum(self.zipAllSize)
         
         self.zipDown = 0
         list(self.pool.map(self.zipFile,self.file_paths))
+        #self.zipFile("uninst.exe")
+        
         self.zip.close()
         self.returnInfo("打包程序压缩包 - 完成",100)
 
@@ -97,18 +102,22 @@ class PackExe:
     def run(self):
         self.returnInfo("==================== Starting Pack Exe ====================")
         popenCwd = self.ui.buildDir
-        iconPath = "exeicon.ico"
         pyPath = ".".join([self.ui.exeName,"py"])
         uiPath = "ExeUi.py"
         pyinstallerPopenCommand = ["cmd","/c",
                                    "pyinstaller39",
                                    "-F",
                                    "-w",
-                                   "-i",iconPath,
+                                   "-i","exeicon.ico",
                                    pyPath,
                                    "--add-data","winicon.ico;.",
                                    "--add-data","pkg.zip;.",
-                                   "--add-data","ExeUi.py;."]
+                                   "--add-data","ExeUi.py;.",
+                                   "--add-data","exeicon.ico;."]
+        if os.path.exists(os.path.join(self.ui.buildDir,"image.png")):
+            print("Add image.png in Exe")
+            pyinstallerPopenCommand.append("--add-data")
+            pyinstallerPopenCommand.append("image.png;.")
         p = subprocess.Popen(pyinstallerPopenCommand,
                              stdout = subprocess.PIPE,
                              stderr = subprocess.STDOUT,
@@ -123,9 +132,15 @@ class PackExe:
             if p.poll() != None and p.returncode != None:
                 break
         self.returnInfo("","insert",value = 80,state = "制作安装包程序 - 复制安装包文件")
+        exeFilePath = os.path.join(self.ui.buildDir,"dist",".".join([self.ui.exeName,"exe"]))
+        if os.path.exists(exeFilePath):
+            with open(exeFilePath,"rb") as r:
+                with open(os.path.join(self.ui.distDir,"".join([self.ui.exeName,"安装程序",".exe"])),"wb") as w:
+                    w.write(r.read())
+        else:
+            print("Exe file Not Found.")
         
-        
-        self.returnInfo(f"制作安装包程序结束 - Returncode:{p.returncode}",value = 100,state = "制作安装包程序 - 完成!")
+        self.returnInfo(f"制作安装包程序结束 - Returncode:{p.returncode}",value = 100,state = ("制作安装包程序 - 发生错误, 请检查输出信息!" if p.returncode else "制作安装包程序 - 完成!"))
         self.ui.doEnable()
 
 class highlight(QsciLexerPython):
@@ -255,44 +270,50 @@ class MakeCode:
                     (self.ui.winTitleLineEidt.text(),"__title__"),
                     (self.ui.exeNameLineEdit.text(),"__NAME__"),
                     (self.ui.exeVerLineEdit.text(),"__VER__"),
-                    (self.ui.ui_p1Text.toPlainText(),"__HELLO__"),
-                    (self.ui.ui_p2Per.toPlainText(),"__PER__"),
-                    (self.ui.ui_p5Text.toPlainText(),"__END__"),
-                    (self.ui.ui_p1Text.toPlainText(),"__ui_p1Text__"),
-                    (self.ui.ui_p1Title.text(),"__ui_p1Title__"),
-                    (self.ui.ui_p1LastBtn.text(),"__ui_p1LastBtn__"),
-                    (self.ui.ui_p1NextBtn.text(),"__ui_p1NextBtn__"),
-                    (self.ui.ui_p1EixtBtn.text(),"__ui_p1EixtBtn__"),
-                    (self.ui.ui_p2AcceptText.text(),"__ui_p2AcceptText__"),
-                    (self.ui.ui_p2Per.toPlainText(),"__ui_p2Per__"),
-                    (self.ui.ui_p2Title.text(),"__ui_p2Title__"),
-                    (self.ui.ui_p2Text.text(),"__ui_p2Text__"),
-                    (self.ui.ui_p2LaseBtn.text(),"__ui_p2LastBtn__"),
-                    (self.ui.ui_p2NextBtn.text(),"__ui_p2NextBtn__"),
-                    (self.ui.ui_p2ExitBtn.text(),"__ui_p2EixtBtn__"),
-                    (self.ui.ui_p3InstChangeBtn.text(),"__ui_p3InstChangeBtn__"),
-                    (self.ui.ui_p3InstToText.text(),"__ui_p3InstToText__"),
-                    (self.ui.ui_p3InstPath.text(),"__ui_p3InstPath__"),
-                    (self.ui.ui_p3LastBtn.text(),"__ui_p3LastBtn__"),
-                    (self.ui.ui_p3NextBtn.text(),"__ui_p3NextBtn__"),
-                    (self.ui.ui_p3ExitBtn.text(),"__ui_p3EixtBtn__"),
-                    (self.ui.ui_p3Title.text(),"__ui_p3Title__"),
-                    (self.ui.ui_p3Text.text(),"__ui_p3Text__"),
-                    (self.ui.ui_p4Statu.text(),"__ui_p4Statu__"),
-                    (self.ui.ui_p4Title.text(),"__ui_p4Title__"),
-                    (self.ui.ui_p4ExitBtn.text(),"__ui_p4EixtBtn__"),
-                    (self.ui.ui_p5Text.toPlainText(),"__ui_p5Text__"),
-                    (self.ui.ui_p5Title.text(),"__ui_p5Title__"),
-                    (self.ui.ui_p5Finish.text(),"__ui_p5Finish__"),
-                    (self.ui.ui_p3Addsm.text(),"__ui_p3Addsm__"),
-                    (self.ui.ui_p3Adddl.text(),"__ui_p3Adddl__"),
-                    (self.ui.ui_p3Rnas.text(),"__ui_p3Rnas__"),
-                    (self.ui.ui_p3Rnname.text(),"__ui_p3Rnname__"),
-                    (self.ui.ui_p3Rnto.text(),"__ui_p3Rnto__"),
-                    (self.ui.ui_p4Text.text(),"__ui_p4Text__")
+                    
+                    (self.ui.uiText.ui_p1Text,"__HELLO__"),
+                    (self.ui.uiText.ui_p2Per,"__PER__"),
+                    (self.ui.uiText.ui_p5Text,"__END__"),
+                    (self.ui.uiText.ui_p1Text,"__ui_p1Text__"),
+                    (self.ui.uiText.ui_p1Title,"__ui_p1Title__"),
+                    (self.ui.uiText.ui_p1LastBtn,"__ui_p1LastBtn__"),
+                    (self.ui.uiText.ui_p1NextBtn,"__ui_p1NextBtn__"),
+                    (self.ui.uiText.ui_p1EixtBtn,"__ui_p1EixtBtn__"),
+                    (self.ui.uiText.ui_p2AcceptText,"__ui_p2AcceptText__"),
+                    (self.ui.uiText.ui_p2Per,"__ui_p2Per__"),
+                    (self.ui.uiText.ui_p2Title,"__ui_p2Title__"),
+                    (self.ui.uiText.ui_p2Text,"__ui_p2Text__"),
+                    (self.ui.uiText.ui_p2LaseBtn,"__ui_p2LastBtn__"),
+                    (self.ui.uiText.ui_p2NextBtn,"__ui_p2NextBtn__"),
+                    (self.ui.uiText.ui_p2ExitBtn,"__ui_p2EixtBtn__"),
+                    (self.ui.uiText.ui_p3InstChangeBtn,"__ui_p3InstChangeBtn__"),
+                    (self.ui.uiText.ui_p3InstToText,"__ui_p3InstToText__"),
+                    (self.ui.uiText.ui_p3InstPath,"__ui_p3InstPath__"),
+                    (self.ui.uiText.ui_p3LastBtn,"__ui_p3LastBtn__"),
+                    (self.ui.uiText.ui_p3NextBtn,"__ui_p3NextBtn__"),
+                    (self.ui.uiText.ui_p3ExitBtn,"__ui_p3EixtBtn__"),
+                    (self.ui.uiText.ui_p3Title,"__ui_p3Title__"),
+                    (self.ui.uiText.ui_p3Text,"__ui_p3Text__"),
+                    (self.ui.uiText.ui_p4Statu,"__ui_p4Statu__"),
+                    (self.ui.uiText.ui_p4Title,"__ui_p4Title__"),
+                    (self.ui.uiText.ui_p4ExitBtn,"__ui_p4EixtBtn__"),
+                    (self.ui.uiText.ui_p5Text,"__ui_p5Text__"),
+                    (self.ui.uiText.ui_p5Title,"__ui_p5Title__"),
+                    (self.ui.uiText.ui_p5Finish,"__ui_p5Finish__"),
+                    (self.ui.uiText.ui_p3Addsm,"__ui_p3Addsm__"),
+                    (self.ui.uiText.ui_p3Adddl,"__ui_p3Adddl__"),
+                    (self.ui.uiText.ui_p3Rnas,"__ui_p3Rnas__"),
+                    (self.ui.uiText.ui_p3Rnname,"__ui_p3Rnname__"),
+                    (self.ui.uiText.ui_p3Rnto,"__ui_p3Rnto__"),
+                    (self.ui.uiText.ui_p4Text,"__ui_p4Text__"),
+                    
+                    (self.ui.publisher.text(),"__publisher__"),
+                    (self.ui.helpLink.text(),"__helpLink__"),
+                    (str(self.ui.helpTel.text()),"__helpTel__"),
+                    (str(self.ui.zipAllSize),"__zipAllSize__"),
                     ]
         for new,old in replText:
-            code = code.replace(old,new.replace("\\","\\\\"))
+            code = code.replace(old,"\n".join([new,""]))
             print(old,"->",new)
         
         self.codeEdit = CodeEdit(self.ui)
@@ -308,9 +329,9 @@ class MakeCode:
         print("Saved Code.")
         with open(os.path.join(self.ui.buildDir,".".join([self.ui.exeName,"py"])),"w",encoding = "utf-8") as f:
             f.write(code)
-
+'''
 if __name__ == "__main__":
     app = QtWidgets.QApplication([])
     codeEdit = CodeEdit()
     codeEdit.show()
-    app.exec_()
+    app.exec_()'''
