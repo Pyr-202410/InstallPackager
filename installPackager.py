@@ -39,6 +39,44 @@ sys.excepthook = except_hook
 
 app = QtWidgets.QApplication([])
 
+class Text:
+    def __init__(self,ui,_translate):
+        self.ui = ui
+        self.ui_p1Text          = _translate("MainWindow",self.ui.ui_p1Text.toPlainText())
+        self.ui_p1Title         = _translate("MainWindow",self.ui.ui_p1Title.text())
+        self.ui_p1LastBtn       = _translate("MainWindow",self.ui.ui_p1LastBtn.text())
+        self.ui_p1NextBtn       = _translate("MainWindow",self.ui.ui_p1NextBtn.text())
+        self.ui_p1EixtBtn       = _translate("MainWindow",self.ui.ui_p1EixtBtn.text())
+        self.ui_p2AcceptText    = _translate("MainWindow",self.ui.ui_p2AcceptText.text())
+        self.ui_p2Per           = _translate("MainWindow",self.ui.ui_p2Per.toPlainText())
+        self.ui_p2Title         = _translate("MainWindow",self.ui.ui_p2Title.text())
+        self.ui_p2Text          = _translate("MainWindow",self.ui.ui_p2Text.text())
+        self.ui_p2LaseBtn       = _translate("MainWindow",self.ui.ui_p2LaseBtn.text())
+        self.ui_p2NextBtn       = _translate("MainWindow",self.ui.ui_p2NextBtn.text())
+        self.ui_p2ExitBtn       = _translate("MainWindow",self.ui.ui_p2ExitBtn.text())
+        self.ui_p3InstChangeBtn = _translate("MainWindow",self.ui.ui_p3InstChangeBtn.text())
+        self.ui_p3InstToText    = _translate("MainWindow",self.ui.ui_p3InstToText.text())
+        self.ui_p3InstPath      = _translate("MainWindow",self.ui.ui_p3InstPath.text())
+        self.ui_p3Addsm         = _translate("MainWindow",self.ui.ui_p3Addsm.text())
+        self.ui_p3Adddl         = _translate("MainWindow",self.ui.ui_p3Adddl.text())
+        self.ui_p3Rnas          = _translate("MainWindow",self.ui.ui_p3Rnas.text())
+        self.ui_p3Rnname        = _translate("MainWindow",self.ui.ui_p3Rnname.text())
+        self.ui_p3Rnto          = _translate("MainWindow",self.ui.ui_p3Rnto.text())
+        self.ui_p3LastBtn       = _translate("MainWindow",self.ui.ui_p3LastBtn.text())
+        self.ui_p3NextBtn       = _translate("MainWindow",self.ui.ui_p3NextBtn.text())
+        self.ui_p3ExitBtn       = _translate("MainWindow",self.ui.ui_p3ExitBtn.text())
+        self.ui_p3Title         = _translate("MainWindow",self.ui.ui_p3Title.text())
+        self.ui_p3Text          = _translate("MainWindow",self.ui.ui_p3Text.text())
+        self.ui_p4Text          = _translate("MainWindow",self.ui.ui_p4Text.text())
+        self.ui_p4Statu         = _translate("MainWindow",self.ui.ui_p4Statu.text())
+        self.ui_p4Title         = _translate("MainWindow",self.ui.ui_p4Title.text())
+        self.ui_p4ExitBtn       = _translate("MainWindow",self.ui.ui_p4ExitBtn.text())
+        self.ui_p5Text          = _translate("MainWindow",self.ui.ui_p5Text.toPlainText())
+        self.ui_p5Title         = _translate("MainWindow",self.ui.ui_p5Title.text())
+        self.ui_p5Last          = _translate("MainWindow",self.ui.ui_p5Last.text())
+        self.ui_p5Finish        = _translate("MainWindow",self.ui.ui_p5Finish.text())
+        self.ui_p5Exit          = _translate("MainWindow",self.ui.ui_p5Exit.text())
+
 class Ui(installPackagerUi,QtWidgets.QMainWindow):
     sinMakeCode = QtCore.pyqtSignal()
     sinPackExe = QtCore.pyqtSignal()
@@ -48,40 +86,14 @@ class Ui(installPackagerUi,QtWidgets.QMainWindow):
         self.sinMakeCode.connect(self.makeCode)
         self.sinPackExe.connect(self.packExe)
         self.exeIconCheckBox.setChecked(True)
+        self.updateIconChecked()
     def updUi(self):
         def _translate(name,text):
             vText = text.replace("{hello}",self.helloTextEdit.toPlainText()).replace("{per}",self.permissionTextEdit.toPlainText()).replace("{end}",self.endTextEdit.toPlainText()).replace("{name}",self.exeNameLineEdit.text()).replace("{ver}",self.exeVerLineEdit.text())
             if text != vText:print("Tr:",text,"->",vText,";Name:",self.exeNameLineEdit.text(),";Ver:",self.exeVerLineEdit.text())
             return QtCore.QCoreApplication.translate(name,vText)
-        self.ui_p1Text.setPlainText(_translate("MainWindow",self.ui_p1Text.toPlainText()))
-        self.ui_p1Title.setText(_translate("MainWindow",self.ui_p1Title.text()))
-        self.ui_p1LastBtn.setText(_translate("MainWindow",self.ui_p1LastBtn.text()))
-        self.ui_p1NextBtn.setText(_translate("MainWindow",self.ui_p1NextBtn.text()))
-        self.ui_p1EixtBtn.setText(_translate("MainWindow",self.ui_p1EixtBtn.text()))
-        self.ui_p2AcceptText.setText(_translate("MainWindow",self.ui_p2AcceptText.text()))
-        self.ui_p2Per.setPlainText(_translate("MainWindow", self.ui_p2Per.toPlainText()))
-        self.ui_p2Title.setText(_translate("MainWindow",self.ui_p2Title.text()))
-        self.ui_p2Text.setText(_translate("MainWindow",self.ui_p2Text.text()))
-        self.ui_p2LaseBtn.setText(_translate("MainWindow",self.ui_p2LaseBtn.text()))
-        self.ui_p2NextBtn.setText(_translate("MainWindow",self.ui_p2NextBtn.text()))
-        self.ui_p2ExitBtn.setText(_translate("MainWindow",self.ui_p2ExitBtn.text()))
-        self.ui_p3InstChangeBtn.setText(_translate("MainWindow",self.ui_p3InstChangeBtn.text()))
-        self.ui_p3InstToText.setText(_translate("MainWindow",self.ui_p3InstToText.text()))
-        self.ui_p3InstPath.setText(_translate("MainWindow",self.ui_p3InstPath.text()))
-        self.ui_p3LastBtn.setText(_translate("MainWindow",self.ui_p3LastBtn.text()))
-        self.ui_p3NextBtn.setText(_translate("MainWindow",self.ui_p3NextBtn.text()))
-        self.ui_p3ExitBtn.setText(_translate("MainWindow",self.ui_p3ExitBtn.text()))
-        self.ui_p3Title.setText(_translate("MainWindow",self.ui_p3Title.text()))
-        self.ui_p3Text.setText(_translate("MainWindow",self.ui_p3Text.text()))
-        self.ui_p4Text.setText(_translate("MainWindow",self.ui_p4Text.text()))
-        self.ui_p4Statu.setText(_translate("MainWindow",self.ui_p4Statu.text()))
-        self.ui_p4Title.setText(_translate("MainWindow",self.ui_p4Title.text()))
-        self.ui_p4ExitBtn.setText(_translate("MainWindow",self.ui_p4ExitBtn.text()))
-        self.ui_p5Text.setPlainText(_translate("MainWindow",self.ui_p5Text.toPlainText()))
-        self.ui_p5Title.setText(_translate("MainWindow",self.ui_p5Title.text()))
-        self.ui_p5Last.setText(_translate("MainWindow",self.ui_p5Last.text()))
-        self.ui_p5Finish.setText(_translate("MainWindow",self.ui_p5Finish.text()))
-        self.ui_p5Exit.setText(_translate("MainWindow",self.ui_p5Exit.text()))
+        self.uiText = Text(self,_translate)
+        
     def selectFile(self,title,filters):
         if filters == "Image":
             fileters = "All Supported Picture Files(*.jpg *.jpeg *.png *.gif *.bmp *.tiff *.pcx *.ico *.cur *.ani);;JPEG (*.jpg *.jpeg);;PNG (*.png);;GIF (*.gif);;BMP (*.bmp);;TIFF (*.tiff *.tif);;PCX (*.pcx);;ICO(*.ico);;CUR (*.cur);;ANI (*.ani);;All Files (*)"
@@ -101,7 +113,7 @@ class Ui(installPackagerUi,QtWidgets.QMainWindow):
         if file:
             if self.isQtCanOpenImage(file):
                 print("SelectImage:",file)
-                self.ui_imgPath.setText(f"图片路径：{file}")
+                self.ui_imgPath.setText(f"图片路径: {file}")
         print("SelectImage-Down")
     def selectWinIcon(self):
         print("SelectWinIcon...")
@@ -148,14 +160,9 @@ class Ui(installPackagerUi,QtWidgets.QMainWindow):
             self.output_isErr = True
             
         print("OutputExe...")
-        self.splitter.setEnabled(False)
-        self.exeIconCheckBox.setEnabled(False)
-        self.exeIconLineEdit.setEnabled(False)
-        self.exeIconButton.setEnabled(False)
-        self.winIconToexeIconCheckBox.setEnabled(False)
-        self.exeDirLineEdit.setEnabled(False)
-        self.exeDirButton.setEnabled(False)
-        self.outputButton.setEnabled(False)
+        self.infoDockWidget.setEnabled(False)
+        self.editDockWidget.setEnabled(False)
+        self.frame.setEnabled(False)
         
         exeName = self.exeNameLineEdit.text()
         exeVer = self.exeVerLineEdit.text()
@@ -202,6 +209,18 @@ class Ui(installPackagerUi,QtWidgets.QMainWindow):
                     shutil.copyfile(self.exeIconLineEdit.text(),os.path.join(self.buildDir,"exeicon.ico"))
                 except Exception as err:
                     raiseErr(f"复制程序图标文件时出错!\n详细信息:\n{err}")
+        if len(self.ui_imgPath.text().split(": ")) > 1:
+            image = self.ui_imgPath.text().split(": ")[1]
+            if os.path.exists(image):
+                try:
+                    QtGui.QPixmap(image)
+                except:
+                    raiseErr(f"窗口图片文件Qt无法打开!\n路径: {image}")
+                else:
+                    try:
+                        shutil.copyfile(image,os.path.join(self.buildDir,"image.png"))
+                    except Exception as err:
+                        raiseErr(f"复制窗口图片文件时出错!\n详细信息:\n{err}")
         
         try:
             shutil.copyfile("./ExeUi.py",os.path.join(self.buildDir,"ExeUi.py"))
@@ -220,14 +239,9 @@ class Ui(installPackagerUi,QtWidgets.QMainWindow):
         
         delattr(self,"output_isErr")
     def doEnable(self):
-        self.splitter.setEnabled(True)
-        self.exeIconCheckBox.setEnabled(True)
-        self.exeIconLineEdit.setEnabled(True)
-        self.exeIconButton.setEnabled(True)
-        self.winIconToexeIconCheckBox.setEnabled(True)
-        self.exeDirLineEdit.setEnabled(True)
-        self.exeDirButton.setEnabled(True)
-        self.outputButton.setEnabled(True)
+        self.infoDockWidget.setEnabled(True)
+        self.editDockWidget.setEnabled(True)
+        self.frame.setEnabled(True)
     def makeCode(self):
         mc = MakeCode(ui,app)
         mc.makeCode()
@@ -265,3 +279,4 @@ class Ui(installPackagerUi,QtWidgets.QMainWindow):
 ui = Ui()
 ui.show()
 app.exec_()
+#pyuic5 -o C:\Users\Administrator\Desktop\PYExe\2024项目\工具\installPackager2.0\installPackagerUi.py C:\Users\Administrator\Desktop\PYExe\2024项目\工具\installPackager2.0\installPackagerUi.ui
