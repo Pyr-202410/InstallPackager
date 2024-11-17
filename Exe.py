@@ -1,3 +1,4 @@
+from __future__ import print_function
 from PyQt5 import QtGui,QtCore,QtWidgets
 from PyQt5.QtCore import Qt
 import sys,io
@@ -6,27 +7,30 @@ import zipfile
 import winshell
 import pythoncom
 import winreg
+import base64
+from PIL import Image
+import hashlib
+import random
+import json
+import ctypes
+import datetime
 from ExeUi import Ui_MainWindow as ExeUi
 app = QtWidgets.QApplication([])
 
-stdFile = open("Inst.log","a",encoding = "utf-8")
+# 高分屏适配
+QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling)
 
-class Stdout(io.TextIOBase):
-    def __init__(self):
-        self.content = ""
-        self._type = "Info"
-    def write(self,text = ""):
-        self.content += text
-        if text != "\n" and text:
-            stdFile.write("".join([f"[{self._type}] ",text.strip(),"\n"]))
-    def flush(self):
-        self.content = ""
-class Stderr(Stdout):
-    def __init__(self):
-        self.content = ""
-        self._type = "Err"
-sys.stdout = Stdout()
-sys.stderr = Stderr()
+# 必须以管理员权限运行 (检测机制)
+def is_admin():
+    try:
+        return ctypes.windll.shell32.IsUserAnAdmin()
+    except:
+        return False
+if is_admin():
+    pass
+else:
+    ctypes.windll.shell32.ShellExecuteW(None,"runas",sys.executable,sys.argv[0],None,0)
+    sys.exit(0)
 
 # 解决PyQt5不显示类中函数调用无法获取报错的问题
 def except_hook(cls, exception, traceback):
@@ -38,11 +42,32 @@ def resource_path(relative_path):
         return os.path.join(sys._MEIPASS, relative_path)
     return os.path.join(os.path.abspath("."), relative_path)
 
-NAME = """__NAME__"""
-VER = """__VER__"""
-HELLO = """__HELLO__"""
-PER = """__PER__"""
-END = """__END__"""
+# 图片转base64
+def image_to_base64(image_path):
+    with open(image_path,"rb") as f:
+        return base64.b64encode(f.read()).decode('utf-8')
+
+def generate_sha256(input_string):
+    sha256_hash = hashlib.sha256()
+    sha256_hash.update(input_string.encode('utf8'))
+    return str(sha256_hash.hexdigest())
+
+
+NAME = """__NAME__""".strip()
+VER = """__VER__""".strip()
+HELLO = """__HELLO__""".strip()
+PER = """__PER__""".strip()
+END = """__END__""".strip()
+
+instDataList = {"name":NAME,
+                "ver":VER,
+                "icon":None,
+                "image":None,
+                "instDir":None,
+                "sha256":None,
+                "startMenu":False,
+                "desktopLink":False
+                }
 
 def create_shortcut(target_path,
                     shortcut_path,
@@ -61,11 +86,28 @@ def create_shortcut(target_path,
         pythoncom.CoUninitialize()
     except:pass
 
-def register_program(program_name, program_path):
-    key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall", 0, winreg.KEY_WRITE)
-    new_key = winreg.CreateKey(key, program_name)
+def register_program(program_name,program_path,icon,sha256,instDir,publisher,helpLink,helpTel,size):
+    topKey = r"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall"
+    sha256_ = sha256
+    while True:
+        try:
+            winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,"\\".join([topKey,sha256_]))
+            sha256_ = sha256 + str(random.random())
+        except:
+            break
+    key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,topKey, 0, winreg.KEY_WRITE)
+    new_key = winreg.CreateKey(key,sha256)
     winreg.SetValueEx(new_key, "DisplayName", 0, winreg.REG_SZ, program_name)
-    winreg.SetValueEx(new_key, "UninstallString", 0, winreg.REG_SZ, program_path)
+    winreg.SetValueEx(new_key, "UninstallString", 0, winreg.REG_SZ,f"start /D \"{instDir}\" \"{os.path.join(instDir,'uninst.exe')}\" /B")
+    winreg.SetValueEx(new_key, "Publisher", 0, winreg.REG_SZ,publisher)
+    winreg.SetValueEx(new_key, "DisplayVersion", 0, winreg.REG_SZ,VER)
+    winreg.SetValueEx(new_key, "DisplayIcon", 0, winreg.REG_SZ,os.path.join(program_path,icon))
+    winreg.SetValueEx(new_key, "sha256", 0, winreg.REG_SZ,sha256)
+    winreg.SetValueEx(new_key, "InstallLocation", 0, winreg.REG_SZ,instDir) # 安装路径
+    winreg.SetValueEx(new_key, "HelpLink", 0, winreg.REG_SZ,helpLink) # 帮助链接
+    winreg.SetValueEx(new_key, "HelpTelephone", 0, winreg.REG_SZ,helpTel) # 帮助电话
+    winreg.SetValueEx(new_key, "InstallDate", 0, winreg.REG_SZ,datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")) # 安装日期
+    winreg.SetValueEx(new_key, "EstimatedSize", 0, winreg.REG_DWORD,size) # 程序预计大小
     winreg.CloseKey(new_key)
     winreg.CloseKey(key)
 
@@ -76,9 +118,19 @@ class UiText(ExeUi):
         self.ui_p2Icon.setPixmap(QtGui.QPixmap(winicon))
         self.ui_p3Icon.setPixmap(QtGui.QPixmap(winicon))
         self.ui_p4Icon.setPixmap(QtGui.QPixmap(winicon))
+        
+        instDataList["icon"] = image_to_base64(winicon)
+        if "image.png" in os.listdir(resource_path("./")):
+            image = resource_path("./image.png")
+            print("Found image",image)
+            self.ui_p1Image.setPixmap(QtGui.QPixmap(image))
+            self.ui_p5Image.setPixmap(QtGui.QPixmap(image))
+            instDataList["image"] = image_to_base64(image)
+            del image
+        
         def _translate(text):
-            return text.replace("{hello}",HELLO).replace("{per}",PER).replace("{end}",END).replace("{name}",NAME).replace("{ver}",VER)
-        self.setWindowTitle(r"""__title__""")
+            return text.replace("{hello}",HELLO).replace("{per}",PER).replace("{end}",END).replace("{name}",NAME).replace("{ver}",VER).strip()
+        self.setWindowTitle(r"""__title__""".strip())
         self.ui_p1Text.setPlainText(_translate(r"""__ui_p1Text__"""))
         self.ui_p1Title.setText(_translate(r"""__ui_p1Title__"""))
         self.ui_p1LastBtn.setText(_translate(r"""__ui_p1LastBtn__"""))
@@ -164,7 +216,7 @@ class Worker(QtCore.QThread):
     def showInfo(self,value):
         self.ui.ui_p4Pb.setValue(value)
     def showStatu(self,text):
-        self.ui.ui_p4Statu.setText(" ".join([self.ui.ui_p4Statu.text(),text]))
+        self.ui.ui_p4Statu.setText(" ".join(["状态:",text]))
     def extract(self,i,file,outDir):
         print(file,outDir)
         while 1:
@@ -188,8 +240,22 @@ class Worker(QtCore.QThread):
     def run(self):
         self.zip = zipfile.ZipFile(resource_path("pkg.zip"))
         self.files = self.zip.infolist()
-        outDir = self.ui.ui_p3InstPath.text()
+        outDir = os.path.abspath(self.ui.ui_p3InstPath.text())
         self.outDir = outDir
+        if not os.path.exists(self.outDir):
+            os.makedirs(self.outDir)
+        with open(resource_path("./exeicon.ico"),"rb") as r:
+            with open(os.path.join(self.outDir,"ExeIcon.ico"),"wb") as w:
+                w.write(r.read())
+        
+        instDataList["instDir"] = self.outDir
+        instDataList["sha256"] = generate_sha256(",".join([instDataList["name"],
+                                                           instDataList["ver"],
+                                                           instDataList["instDir"],
+                                                           str(time.time()),
+                                                           str(random.randint(0,2147483648))
+                                                           ]))
+        
         self.sinStatu.emit("解压缩程序文件夹")
         list(map(lambda x:self.extract(*x,outDir),enumerate(self.files)))
         
@@ -197,15 +263,65 @@ class Worker(QtCore.QThread):
         self.findExeFile()
         if self.ui.ui_p3Addsm.isChecked():
             self.sinStatu.emit("创建开始菜单项")
-            self.addStartMenu()
+            while 1:
+                try:
+                    self.addStartMenu()
+                    break
+                except:
+                    result = QtWidgets.QMessageBox.critical(self.ui,
+                                                        "错误",
+                                                        "\n".join(["创建桌面快捷方式失败!"]),
+                                                        QtWidgets.QMessageBox.Ignore | QtWidgets.QMessageBox.Retry | QtWidgets.QMessageBox.Cancel,
+                                                        QtWidgets.QMessageBox.Retry)
+                    if result != QtWidgets.QMessageBox.Retry:
+                        break
+            instDataList["startMenu"] = True
         if self.ui.ui_p3Adddl.isChecked():
             self.sinStatu.emit("创建桌面快捷方式")
-            self.addDesktopLink()
+            while 1:
+                try:
+                    self.addDesktopLink()
+                    break
+                except:
+                    result = QtWidgets.QMessageBox.critical(self.ui,
+                                                        "错误",
+                                                        "\n".join(["创建桌面快捷方式失败!"]),
+                                                        QtWidgets.QMessageBox.Ignore | QtWidgets.QMessageBox.Retry | QtWidgets.QMessageBox.Cancel,
+                                                        QtWidgets.QMessageBox.Retry)
+                    if result != QtWidgets.QMessageBox.Retry:
+                        break
+            
+            instDataList["desktopLink"] = True
         if self.exeFile:
             self.sinStatu.emit("注册程序")
-            register_program(self.exeFile,os.path.join(self.outDir,self.exeFile))
+            while 1:
+                try:
+                    register_program(self.exeFile,
+                                     os.path.join(self.outDir,self.exeFile),
+                                     os.path.join(self.outDir,"ExeIcon.ico"),
+                                     instDataList["sha256"],
+                                     self.outDir,
+                                     """__publisher__""".strip(),
+                                     """__helpLink__""".strip(),
+                                     """__helpTel__""".strip(),
+                                     int("""__zipAllSize__""".strip())
+                                     )
+                    break
+                except Exception as err:
+                    result = QtWidgets.QMessageBox.critical(self.ui,
+                                                        "错误",
+                                                        "\n".join(["注册程序失败!","","详细信息:",str(err)]),
+                                                        QtWidgets.QMessageBox.Ignore | QtWidgets.QMessageBox.Retry | QtWidgets.QMessageBox.Cancel,
+                                                        QtWidgets.QMessageBox.Retry)
+                    if result != QtWidgets.QMessageBox.Retry:
+                        break
         
         self.zip.close()
+        
+        self.sinStatu.emit("写入安装配置")
+        with open(os.path.join(self.outDir,"inst"),"w",encoding = "utf-8") as f:
+            f.write(json.dumps(instDataList,ensure_ascii = False))
+        
         self.ui.ui_p4Pb.setValue(100)
         time.sleep(0.5)
         self.ui.nextPage()
@@ -234,3 +350,4 @@ ui.show()
 while 1:
     ui.show()
     app.exec_()
+#pyuic5 -o C:\Users\Administrator\Desktop\PYExe\2024项目\工具\installPackager2.0\ExeUi.py C:\Users\Administrator\Desktop\PYExe\2024项目\工具\installPackager2.0\ExeUi.ui

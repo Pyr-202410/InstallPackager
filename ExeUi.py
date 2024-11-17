@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'ExeUi.ui'
+# Form implementation generated from reading ui file 'C:\Users\Administrator\Desktop\PYExe\2024项目\工具\installPackager2.0\ExeUi.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.9
 #

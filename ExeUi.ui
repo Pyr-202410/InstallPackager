@@ -509,9 +509,6 @@
                   <height>50</height>
                  </size>
                 </property>
-                <property name="frameShape">
-                 <enum>QFrame::Box</enum>
-                </property>
                 <property name="text">
                  <string>窗口图标</string>
                 </property>
@@ -1063,9 +1060,6 @@
                   <height>50</height>
                  </size>
                 </property>
-                <property name="frameShape">
-                 <enum>QFrame::Box</enum>
-                </property>
                 <property name="text">
                  <string>窗口图标</string>
                 </property>
@@ -1293,9 +1287,6 @@
                   <width>50</width>
                   <height>50</height>
                  </size>
-                </property>
-                <property name="frameShape">
-                 <enum>QFrame::Box</enum>
                 </property>
                 <property name="text">
                  <string>窗口图标</string>
